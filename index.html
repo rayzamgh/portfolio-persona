@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Page - P3R Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: white;
+        }
+
+        #scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none; /* Allows clicks to pass through */
+        }
+        
+        #overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 150px 50px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+        }
+
+        #ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 2rem 4rem;
+            pointer-events: none; 
+        }
+
+        #logo {
+            font-size: 3rem;
+            font-weight: 900;
+            text-align: right;
+            line-height: 1;
+            transform: skewX(-10deg);
+        }
+        #logo span {
+            display: block;
+            background: #00aaff;
+            color: #011021;
+            padding: 0.25rem 1rem;
+        }
+
+        nav {
+            pointer-events: auto;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: right;
+        }
+
+        nav li {
+            margin: 0.5rem 0;
+        }
+
+        nav a {
+            display: inline-block;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            padding: 0.25rem 2rem;
+            transform: skewX(-15deg);
+            transition: all 0.3s ease-out;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        nav a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background-color: #00aaff;
+            z-index: -1;
+            transition: width 0.3s ease-out;
+        }
+
+        nav a:hover {
+            color: #011021;
+        }
+        
+        nav a:hover::before {
+            width: 100%;
+        }
+
+        #footer {
+            position: fixed;
+            bottom: 1rem;
+            right: 2rem;
+            z-index: 4;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Hide 2D modals, we are using 3D modals only now */
+        .modal {
+           display: none;
+        }
+        
+        @media (max-width: 768px) {
+            #ui-container {
+                padding: 1rem 1.5rem;
+                align-items: center;
+                justify-content: space-around;
+            }
+            #logo { font-size: 2rem; text-align: center; }
+            nav { width: 100%; }
+            nav ul { text-align: center; }
+            nav a { font-size: 1.8rem; padding: 0.25rem 1rem; }
+            #footer { text-align: center; width: 100%; right: 0; bottom: 0.5rem; font-size: 0.7rem;}
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="scene-container"></div>
+    <div id="overlay"></div>
+
+    <div id="ui-container">
+        <div id="logo">
+            RAYZA MAHENDRA
+            <span>PORTFOLIO</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a data-target-id="1">ABOUT ME</a></li>
+                <li><a data-target-id="2">PROJECTS</a></li>
+                <li><a data-target-id="3">CONTACT</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="footer">
+        Credits: Inspired by Persona 3 Reload
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Mobile Detection ---
+        const isMobile = window.innerWidth <= 768;
+
+        // --- Basic Setup ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x001a33, 10, 40);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('scene-container').appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x005f99, 2);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0x00aaff, 3);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+        const hemisphereLight = new THREE.HemisphereLight(0x001a33, 0x001f3d, 1.5);
+        scene.add(hemisphereLight);
+
+        // --- Scene Objects (Classroom) ---
+        const material = new THREE.MeshLambertMaterial({ color: 0x003366 });
+        const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x002a54 });
+        
+        const floorGeo = new THREE.PlaneGeometry(50, 50);
+        const floor = new THREE.Mesh(floorGeo, new THREE.MeshLambertMaterial({ color: 0x002244 }));
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -2;
+        scene.add(floor);
+
+        const ceiling = new THREE.Mesh(floorGeo, wallMaterial);
+        ceiling.rotation.x = Math.PI / 2;
+        ceiling.position.y = 10;
+        scene.add(ceiling);
+
+        const wallGeo = new THREE.PlaneGeometry(50, 12);
+        const backWall = new THREE.Mesh(wallGeo, wallMaterial);
+        backWall.position.set(0, 4, -25);
+        scene.add(backWall);
+
+        const sideWallGeo = new THREE.PlaneGeometry(50, 12);
+        const leftWall = new THREE.Mesh(sideWallGeo, wallMaterial);
+        leftWall.rotation.y = Math.PI / 2;
+        leftWall.position.set(-25, 4, 0);
+        scene.add(leftWall);
+
+        const rightWall = new THREE.Mesh(sideWallGeo, wallMaterial);
+        rightWall.rotation.y = -Math.PI / 2;
+        rightWall.position.set(25, 4, 0);
+        scene.add(rightWall);
+
+        const blackboard = new THREE.Mesh(new THREE.BoxGeometry(15, 7, 0.2), new THREE.MeshBasicMaterial({ color: 0x0a1a2a }));
+        blackboard.position.set(0, 3, -24.8);
+        scene.add(blackboard);
+
+        for(let i = -2; i <= 2; i++) {
+            const light = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 1), new THREE.MeshBasicMaterial({ color: 0xadd8e6 }));
+            light.position.set(i * 10, 9.8, 0);
+            scene.add(light);
+        }
+
+        function createDeskAndChair(x, z) {
+            const group = new THREE.Group();
+            const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 1.2), material);
+            deskTop.position.y = -0.5;
+            group.add(deskTop);
+            const leg = new THREE.BoxGeometry(0.1, 1.5, 0.1);
+            const leg1 = new THREE.Mesh(leg, material);
+            leg1.position.set(-0.9, -1.25, -0.5);
+            group.add(leg1);
+            const leg2 = leg1.clone();
+            leg2.position.set(0.9, -1.25, -0.5);
+            group.add(leg2);
+            const leg3 = leg1.clone();
+            leg3.position.set(-0.9, -1.25, 0.5);
+            group.add(leg3);
+            const leg4 = leg1.clone();
+            leg4.position.set(0.9, -1.25, 0.5);
+            group.add(leg4);
+            
+            const chair = createChair(0, -0.8); // Positioned behind the desk
+            group.add(chair);
+
+            group.position.set(x, 0, z);
+            group.rotation.y = Math.random() * 0.2 - 0.1;
+            scene.add(group);
+        }
+        
+        function createChair(x, z) {
+            const group = new THREE.Group();
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.8), material);
+            seat.position.y = -1.2;
+            group.add(seat);
+            const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.1), material);
+            back.position.set(0, -0.7, -0.35);
+            group.add(back);
+            const leg = new THREE.BoxGeometry(0.1, 0.8, 0.1);
+            const leg1 = new THREE.Mesh(leg, material);
+            leg1.position.set(-0.35, -1.6, -0.35);
+            group.add(leg1);
+            const leg2 = leg1.clone();
+            leg2.position.set(0.35, -1.6, -0.35);
+            group.add(leg2);
+            const leg3 = leg1.clone();
+            leg3.position.set(-0.35, -1.6, 0.35);
+            group.add(leg3);
+            const leg4 = leg1.clone();
+            leg4.position.set(0.35, -1.6, 0.35);
+            group.add(leg4);
+            group.position.set(x, 0, z);
+            return group;
+        }
+
+        for (let i = -3; i <= 3; i++) {
+            for (let j = -2; j <= 2; j++) {
+                createDeskAndChair(i * 6, j * 7);
+            }
+        }
+        
+        const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.3 });
+        const curtainMaterial = new THREE.MeshLambertMaterial({ color: 0x004c80 });
+        for (let i = -2; i <= 2; i++) {
+            const windowX = i * 7;
+            const windowPane = new THREE.Mesh(new THREE.BoxGeometry(5, 6, 0.1), windowMaterial);
+            windowPane.position.set(windowX, 3, -24.9);
+            scene.add(windowPane);
+
+            const curtain = new THREE.Mesh(new THREE.BoxGeometry(0.5, 6.2, 0.2), curtainMaterial);
+            curtain.position.set(windowX - 2.6, 3, -24.7);
+            scene.add(curtain);
+            const curtain2 = curtain.clone();
+            curtain2.position.set(windowX + 2.6, 3, -24.7);
+            scene.add(curtain2);
+        }
+
+        // --- 2D Characters as Sprites ---
+        const textureLoader = new THREE.TextureLoader();
+        
+        const protagonistTexture = textureLoader.load('images/char1.png');
+        const yukariTexture = textureLoader.load('images/char2.png');
+        const junpeiTexture = textureLoader.load('images/char3.png');
+        
+        function createCharacterSprite(position, scale, texture) {
+            const spriteMaterial = new THREE.SpriteMaterial({ 
+                map: texture, 
+                transparent: true, 
+                opacity: 0.9,
+                alphaTest: 0.1
+            });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.position.copy(position);
+            sprite.scale.set(scale.x, scale.y, 1);
+            scene.add(sprite);
+            return sprite;
+        }
+
+        const char1Pos = new THREE.Vector3(-5, 0.7, 2);
+        const char2Pos = new THREE.Vector3(3, 0.7, 2);
+        const char3Pos = new THREE.Vector3(3, 0.7, -16);
+
+        const char1 = createCharacterSprite(char1Pos, {x: 2, y: 5.5}, protagonistTexture);
+        const char2 = createCharacterSprite(char2Pos, {x: 2, y: 5.5}, yukariTexture);
+        const char3 = createCharacterSprite(char3Pos, {x: 1.7, y: 5.2}, junpeiTexture);
+        char3.material.opacity = 0.7;
+
+        // --- 3D Modal Windows ---
+        const modalWindows = {};
+        
+        function create3DModal(id, title, content, position, cameraPosition) {
+            const group = new THREE.Group();
+            
+            const panelGeometry = new THREE.PlaneGeometry(10, 8);
+            const panelMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x011021, 
+                transparent: true, 
+                opacity: 0.9 
+            });
+            const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+            group.add(panel);
+            
+            const borderGeometry = new THREE.EdgesGeometry(panelGeometry);
+            const borderMaterial = new THREE.LineBasicMaterial({ color: 0x00aaff, linewidth: 3 });
+            const border = new THREE.LineSegments(borderGeometry, borderMaterial);
+            group.add(border);
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 640;
+            canvas.height = 512;
+            
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#00aaff';
+            context.font = '900 28px Inter';
+            context.textAlign = 'center';
+            context.save();
+            context.transform(1, 0, -0.1, 1, 0, 0); 
+            context.fillText(title, canvas.width / 2, 45);
+            context.restore();
+            
+            context.strokeStyle = '#00aaff';
+            context.lineWidth = 2;
+            context.beginPath();
+            context.moveTo(40, 60);
+            context.lineTo(canvas.width - 40, 60);
+            context.stroke();
+            
+            const lines = content.split('\n');
+            let y = 100;
+            
+            lines.forEach(line => {
+                if (line.trim() === '') {
+                    y += 15;
+                    return;
+                }
+                
+                const isHeader = line.match(/^(Current Role|Education|Key Skills|Contact Details|Online Presence|PA-GPT|Few-shot|Citation|WhatsApp)/) && !line.includes(':');
+                
+                if (isHeader) {
+                    context.fillStyle = '#00aaff';
+                    context.font = '700 20px Inter';
+                    context.textAlign = 'left';
+                    context.fillText(line, 40, y);
+                    y += 30;
+                } else {
+                    context.fillStyle = '#ffffff';
+                    context.font = '400 16px Inter';
+                    context.textAlign = 'left';
+                    
+                    const words = line.split(' ');
+                    let currentLine = '';
+                    
+                    for (const word of words) {
+                        const testLine = currentLine + word + ' ';
+                        const metrics = context.measureText(testLine);
+                        
+                        if (metrics.width > 560 && currentLine !== '') {
+                            context.fillText(currentLine.trim(), 40, y);
+                            currentLine = word + ' ';
+                            y += 22;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    
+                    if (currentLine.trim()) {
+                        context.fillText(currentLine.trim(), 40, y);
+                        y += 26;
+                    }
+                }
+            });
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            const textMaterial = new THREE.MeshBasicMaterial({ 
+                map: texture, 
+                transparent: true,
+                alphaTest: 0.1
+            });
+            const textMesh = new THREE.Mesh(panelGeometry, textMaterial);
+            textMesh.position.z = 0.01;
+            group.add(textMesh);
+            
+            group.position.copy(position);
+            group.lookAt(cameraPosition);
+            group.visible = false;
+            scene.add(group);
+            
+            return group;
+        }
+
+        // --- Camera & Interactivity ---
+        const defaultCameraPos = new THREE.Vector3(0, 2, 10);
+        const defaultLookAt = new THREE.Vector3(0, 0, 0);
+
+        const modalPositions = {
+            '1': new THREE.Vector3(-8, 2, 1),
+            '2': new THREE.Vector3(7, 2, 4),
+            '3': new THREE.Vector3(0, 2, -18),
+        }
+
+        // Create 3D modals
+        modalWindows['1'] = create3DModal('1', 'ABOUT ME', 
+            'Machine Learning Engineer with 4+ years of experience in AI/ML solutions, specializing in LLMOps, GenAI, and NLP.\n\nCurrent Role\nML Engineer at Telkomsel (July 2023 - Present)\nLeading GenAI governance and implementations including LLMOps Platform, Chatbots and Recomendation Systems.\n\nEducation\nMaster\'s in Computer Science - ITB (GPA 3.81/4.00)\nBachelor\'s in Informatics - ITB (GPA 3.65/4.00)\n\nKey Skills\nPython, Golang, JavaScript • TensorFlow, PyTorch • AWS, Kubernetes • LangChain, OpenAI GPT • Docker, Airflow',
+            modalPositions['1'],
+            defaultCameraPos
+        );
+        
+        modalWindows['2'] = create3DModal('2', 'PROJECTS', 
+            'PA-GPT Personal Assistant (2022)\nWeb-based AI companion with GPT & Langchain featuring internet search, Wolfram Calculator, Arxiv summaries, and \'Rayza-QA\' for interactive insights.\n\nFew-shot Learning in Indonesian (2022)\nMaster\'s thesis presenting Indonesian text classification using minimal data. Benchmarked on IndoNLU with GPT-Neo, IndoGPT, XGLM, XLM-R.\n\nCitation Intent & Sentiment Analysis (2021)\nBachelor\'s thesis mapping scientific journals into knowledge graphs using CORD-19 dataset. Built with SciBERT, Word2vec, XLnet.\n\nWhatsApp Personal ChatGPT (2020)\nChatGPT accessible through WhatsApp without login hassle. Built with Node.js, OpenAI, Google Cloud Run, Docker.',
+            modalPositions['2'],
+            defaultCameraPos
+        );
+        
+        modalWindows['3'] = create3DModal('3', 'CONTACT', 
+            'Let\'s connect! Feel free to reach out for collaboration, opportunities, or just to chat about AI/ML.\n\nContact Details\nEmail: rayzamgh@gmail.com\nPhone: +62 8966 6634 343\nLocation: Jakarta, Indonesia\n\nOnline Presence\nPortfolio: rayzamahendra.xyz\nGitHub: github.com/rayzamgh',
+            modalPositions['3'],
+            defaultCameraPos
+        );
+
+        // Responsive Camera Targets
+        const cameraTargets = {
+             '1': { 
+                pos: isMobile ? new THREE.Vector3(-6, 2, 14) : new THREE.Vector3(-6, 2, 8), 
+                lookAt: modalPositions['1']
+            },
+            '2': { 
+                pos: isMobile ? new THREE.Vector3(3, 2, 14) : new THREE.Vector3(3, 2, 7), 
+                lookAt: modalPositions['2']
+            },
+            '3': { 
+                pos: isMobile ? new THREE.Vector3(2, 3, -5) : new THREE.Vector3(2, 3, -10), 
+                lookAt: modalPositions['3']
+            },
+        };
+
+        let targetCameraPos = defaultCameraPos.clone();
+        let targetLookAt = defaultLookAt.clone();
+        
+        camera.position.copy(defaultCameraPos);
+        camera.lookAt(defaultLookAt);
+
+        const navLinks = document.querySelectorAll('nav a');
+
+        function hideAll3DModals() {
+            Object.values(modalWindows).forEach(modal => {
+                modal.visible = false;
+            });
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                hideAll3DModals();
+                const targetId = link.dataset.targetId;
+                if (cameraTargets[targetId]) {
+                    targetCameraPos.copy(cameraTargets[targetId].pos);
+                    targetLookAt.copy(cameraTargets[targetId].lookAt);
+                    
+                    setTimeout(() => {
+                        if (modalWindows[targetId]) {
+                            modalWindows[targetId].visible = true;
+                        }
+                    }, 600); // Delay to allow camera to move
+                }
+            });
+        });
+
+        renderer.domElement.addEventListener('click', (event) => {
+            // Do not close if a navigation link was clicked
+            if (event.target.closest('nav a')) return;
+
+            // If a modal is visible, hide it and return camera to default
+            const isAnyModalVisible = Object.values(modalWindows).some(modal => modal.visible);
+            if (isAnyModalVisible) {
+                 hideAll3DModals();
+                targetCameraPos.copy(defaultCameraPos);
+                targetLookAt.copy(defaultLookAt);
+            }
+        });
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            camera.position.lerp(targetCameraPos, 0.05);
+            const currentLookAt = new THREE.Vector3();
+            camera.getWorldDirection(currentLookAt).multiplyScalar(10).add(camera.position);
+            currentLookAt.lerp(targetLookAt, 0.05);
+            camera.lookAt(currentLookAt);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Handle Window Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
