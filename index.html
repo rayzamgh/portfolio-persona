@@ -594,7 +594,9 @@ async function initWorld(progress){
   const loader=new THREE.TextureLoader();
   // Sprites are smoothed signed-distance fields (built from images/charN.png): r = .5 + d/80, d in source px (+ inside), 44px padding.
   const SDF_PAD=44;
-  const DEF=[ {url:'images/char1-sdf.png',pos:V(-4.95,0,1.4),h:1.76,sec:'about'}, {url:'images/char2-sdf.png',pos:V(-2.75,0,-3.2),h:1.62,sec:'contact'}, {url:'images/char3-sdf.png',pos:V(-.9,0,-3.05),h:1.79,sec:'contact'} ];
+  const DEF=[ {url:'images/char1-sdf.png',pos:V(-4.95,0,1.4),h:1.76,sec:'about'}, {url:'images/char2-sdf.png',pos:V(-2.75,0,-3.2),h:1.62,sec:'contact'}, {url:'images/char3-sdf.png',pos:V(-.9,0,-3.05),h:1.79,sec:'contact'},
+    // the courier: drawn in code (images/char5.png)
+    {url:'images/char5-sdf.png',pos:V(1.85,0,-3.35),h:1.62,sec:'contact'} ];
   const texs=await Promise.all(DEF.map(c=>new Promise(r=>loader.load(c.url,r,undefined,()=>r(null)))));
   progress(.9);
   const chars=[];
