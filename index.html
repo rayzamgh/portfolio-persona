@@ -133,7 +133,7 @@ body.ready #hq{opacity:1}
   .mi .ix{display:none}
   .mi:hover,.mi.on{transform:skewX(-15deg)}
   #credit{left:0;right:0;bottom:.4rem;text-align:center;font-size:.62rem}
-  #hq{top:1.1rem;left:auto;right:1rem;font-size:.6rem;padding:.4rem .7rem;letter-spacing:.12em}
+  #hq{top:8rem;left:auto;right:1rem;font-size:.6rem;padding:.4rem .7rem;letter-spacing:.12em}
   body.open #hq{opacity:0;pointer-events:none}
   .sp-t{bottom:20vh}
   #card{left:.8rem;right:.8rem;width:auto;top:auto;bottom:5.4rem;max-height:56vh;max-height:56dvh;transform:translateY(20px)}
@@ -404,7 +404,7 @@ async function initWorld(progress){
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x000814);
   scene.fog=new THREE.Fog(0x001a33,14,80);
-  const camera=new THREE.PerspectiveCamera(W<H?80:55,W/H,.05,900);
+  const camera=new THREE.PerspectiveCamera(W<H?92:55,W/H,.05,900);
 
   const ctex=(w,h,draw,repeat)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h);
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=aniso; if (repeat){ t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(...repeat); } return t; };
@@ -643,7 +643,7 @@ async function initWorld(progress){
     projects:{ pos:V(1.0,1.68,1.9), look:V(.5,1.5,-RZ) },
     contact:{ pos:V(.9,1.58,.3), look:V(-2.1,1.15,-3.3) },
   };
-  if (W<H) VIEWS.home.look=V(-2.2,1.2,-.4); // portrait: swing left so all three figures are in frame
+  if (W<H) VIEWS.home={ pos:V(5.6,1.85,4.85), look:V(-.4,1.2,-.5) }; // portrait: back corner + wider lens so all four figures fit
   const m4=new THREE.Matrix4(), qLook=(e,t,o=new THREE.Quaternion())=>o.setFromRotationMatrix(m4.lookAt(e,t,UP));
   const cur={ pos:V(5,2.3,4.8), quat:qLook(V(5,2.3,4.8),VIEWS.home.look) };
   let view='home', peekId=null, mv=null;
@@ -666,7 +666,7 @@ async function initWorld(progress){
   canvas.addEventListener('pointerleave',()=>{ hover=null; showTip(null); canvas.style.cursor=''; });
   canvas.addEventListener('click',e=>{ const s=pickAt(e.clientX,e.clientY); if (s) open(s); });
 
-  addEventListener('resize',()=>{ W=innerWidth; H=innerHeight; renderer.setSize(W,H,false); camera.aspect=W/H; camera.fov=W<H?80:55; camera.updateProjectionMatrix(); dustMat.uniforms.k.value=H*DPR*.5; });
+  addEventListener('resize',()=>{ W=innerWidth; H=innerHeight; renderer.setSize(W,H,false); camera.aspect=W/H; camera.fov=W<H?92:55; camera.updateProjectionMatrix(); dustMat.uniforms.k.value=H*DPR*.5; });
 
   /* keep the subject in the part of the screen the card doesn't cover */
   const card=$('#card');
