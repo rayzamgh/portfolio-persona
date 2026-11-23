@@ -1188,27 +1188,29 @@ async function initWorld(progress){
   const loader=new THREE.TextureLoader();
   const loadTex=(url)=>new Promise((res,rej)=>loader.load(url,res,undefined,rej));
   const CHARS=[
-    { url:'../images/char1.png', pos:V(-2.15,0,1.35), h:1.76, sec:'status' },
-    { url:'../images/char2.png', pos:V(-1.0,0,-57.4), h:1.62, sec:'social' },
-    { url:'../images/char3.png', pos:V(.6,0,-58.3), h:1.79, sec:'social' },
+    // smoothed signed-distance sprites: r = .5 + d/80 (source px, + inside), 44px padding
+    { url:'../images/char1-sdf.png', pos:V(-2.15,0,1.35), h:1.76, sec:'status' },
+    { url:'../images/char2-sdf.png', pos:V(-1.0,0,-57.4), h:1.62, sec:'social' },
+    { url:'../images/char3-sdf.png', pos:V(.6,0,-58.3), h:1.79, sec:'social' },
   ];
   let loaded=0;
   const charTex=await Promise.all(CHARS.map(c=>loadTex(c.url).then(t=>{ progress(.62+(++loaded)/CHARS.length*.25); return t; }).catch(()=>null)));
   const chars=[];
   CHARS.forEach((c,i)=>{
     const t=charTex[i]; if (!t) return;
-    const img=t.image, asp=img.width/img.height, PAD=1.1;
-    const geo=new THREE.PlaneGeometry(c.h*asp*PAD,c.h*PAD); geo.translate(0,c.h*PAD/2-c.h*(PAD-1)/2,0);
+    const P=44, img=t.image, s=c.h/(img.height-2*P);
+    const geo=new THREE.PlaneGeometry(img.width*s,img.height*s); geo.translate(0,img.height*s/2-P*s,0);
     const mat=new THREE.ShaderMaterial({ transparent:true,
-      uniforms:{ map:{value:t}, texel:{value:new THREE.Vector2(1/img.width,1/img.height)}, fill:{value:new THREE.Color(0x030a1c)}, rim:{value:new THREE.Color(.35,1.25,2.4)}, time:{value:0}, glow:{value:1}, pad:{value:PAD} },
+      uniforms:{ map:{value:t}, fill:{value:new THREE.Color(0x030a1c)}, rim:{value:new THREE.Color(.35,1.25,2.4)}, time:{value:0}, glow:{value:1}, padV:{value:P/img.height} },
       vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-      fragmentShader:`uniform sampler2D map; uniform vec2 texel; uniform vec3 fill,rim; uniform float time,glow,pad; varying vec2 vUv;
-        float A(vec2 u){ vec2 s=step(vec2(0.),u)*step(u,vec2(1.)); return texture2D(map,clamp(u,0.,1.)).a*s.x*s.y; }
-        void main(){ vec2 u=(vUv-.5)*pad+.5; float a=A(u); float d=0.;
-          for(int i=0;i<16;i++){ float an=float(i)*.3927; d=max(d,A(u+vec2(cos(an),sin(an))*texel*7.)); }
-          float e=clamp(d-a,0.,1.); float fl=.85+.15*sin(time*2.3+u.y*18.);
-          vec3 c=fill*(.7+.8*u.y)+vec3(.02,.05,.12)*smoothstep(.6,1.,u.y);
-          c=mix(c,rim*fl*glow,e); float al=max(a,e*.9); if(al<.03) discard; gl_FragColor=vec4(c,al); }` });
+      fragmentShader:`uniform sampler2D map; uniform vec3 fill,rim; uniform float time,glow,padV; varying vec2 vUv;
+        void main(){ float d=(texture2D(map,vUv).r-.5)*80.; float aa=max(fwidth(d)*.75,.02);
+          float by=clamp((vUv.y-padV)/(1.-2.*padV),0.,1.);
+          float inside=smoothstep(-aa,aa,d), outer=smoothstep(-7.-aa,-7.+aa,d);
+          float fl=.85+.15*sin(time*2.3+by*18.);
+          vec3 c=fill*(.7+.8*by)+vec3(.02,.05,.12)*smoothstep(.6,1.,by);
+          c=mix(c,rim*fl*glow,(outer-inside)/max(outer,1e-4));
+          float al=outer*mix(.9,1.,inside); if(al<.01) discard; gl_FragColor=vec4(c,al); }` });
     const mesh=new THREE.Mesh(geo,mat); mesh.position.copy(c.pos); scene.add(mesh);
     const blob=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.6),new THREE.MeshBasicMaterial({map:blobTex,transparent:true,depthWrite:false}));
     blob.rotation.x=-Math.PI/2; blob.position.set(c.pos.x,.01,c.pos.z); scene.add(blob);
