@@ -96,11 +96,29 @@ body.open #card{opacity:1;visibility:visible;transform:translate(0,-50%);transit
 #tip{position:fixed;z-index:8;left:0;top:0;pointer-events:none;background:var(--cyan);color:var(--ink);font-weight:900;font-size:.8rem;letter-spacing:.1em;padding:.3rem .6rem;opacity:0;transition:opacity .12s}
 #tip.on{opacity:1}
 
-#boot{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:#000;transition:opacity .5s}
-#boot.done{opacity:0;pointer-events:none}
-#boot .b{font-weight:900;font-size:1.6rem;transform:skewX(-10deg);letter-spacing:-.01em}
-#boot .b span{display:block;height:3px;margin-top:.6rem;background:rgba(0,170,255,.2);overflow:hidden}
-#boot .b i{display:block;height:100%;background:var(--cyan);transform-origin:left;transform:scaleX(0);transition:transform .25s}
+/* ---------- quality-mode button ---------- */
+#hq{position:fixed;z-index:7;top:1.2rem;left:2rem;display:inline-flex;align-items:center;gap:.55rem;padding:.45rem .95rem;border:1px solid var(--line);background:rgba(1,16,33,.55);color:var(--cyan-hi);font-weight:900;font-size:.7rem;letter-spacing:.16em;text-decoration:none;transform:skewX(-10deg);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:background .15s,color .15s,border-color .15s,opacity .4s;opacity:0}
+body.ready #hq{opacity:1}
+#hq i{width:7px;height:7px;background:var(--cyan);transform:rotate(45deg);box-shadow:0 0 8px var(--cyan)}
+#hq:hover,#hq:focus-visible{background:var(--cyan);color:var(--ink);border-color:var(--cyan);outline:none}
+#hq:hover i,#hq:focus-visible i{background:var(--ink);box-shadow:none}
+
+/* ---------- splash: droplet → ripples → silhouette → reveal ---------- */
+#splash{position:fixed;inset:0;z-index:50;background:#000814;cursor:pointer}
+#splash.gl{background:transparent}
+#splash canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sp-t{position:absolute;left:0;right:0;bottom:16vh;text-align:center;pointer-events:none;transition:opacity .35s}
+.sp-nm{display:inline-block;font-weight:900;font-size:clamp(2.1rem,6.4vw,4.6rem);line-height:1;letter-spacing:-.02em;transform:skewX(-10deg);clip-path:inset(-10% 100% -10% 0);transition:clip-path .8s var(--out);text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.sp-pf{display:block;width:max-content;margin:.45rem auto 0;background:var(--cyan);color:var(--ink);font-weight:900;font-size:clamp(.8rem,1.5vw,1.05rem);letter-spacing:.16em;padding:.18rem .95rem;transform:skewX(-10deg) scaleX(0);transition:transform .55s .35s var(--out)}
+.sp-bar{width:170px;height:2px;margin:1.1rem auto 0;background:rgba(0,170,255,.2);overflow:hidden;transform:skewX(-30deg)}
+.sp-bar i{display:block;height:100%;background:var(--cyan);transform-origin:left;transform:scaleX(0);transition:transform .25s}
+.sp-skip{position:absolute;right:1.5rem;bottom:1.2rem;font-size:.66rem;font-weight:700;letter-spacing:.2em;color:#6f86a3;opacity:0;transition:opacity .4s;pointer-events:none}
+#splash.t .sp-nm{clip-path:inset(-10% -5% -10% 0)}
+#splash.t .sp-pf{transform:skewX(-10deg) scaleX(1)}
+#splash.t.ok .sp-skip{opacity:1}
+#splash.out{pointer-events:none}
+#splash.out .sp-t,#splash.t.ok.out .sp-skip{opacity:0}
+#splash.fade{transition:opacity .6s;opacity:0}
 
 /* ---------- mobile ---------- */
 @media (max-width:768px){
@@ -115,6 +133,9 @@ body.open #card{opacity:1;visibility:visible;transform:translate(0,-50%);transit
   .mi .ix{display:none}
   .mi:hover,.mi.on{transform:skewX(-15deg)}
   #credit{left:0;right:0;bottom:.4rem;text-align:center;font-size:.62rem}
+  #hq{top:1.1rem;left:auto;right:1rem;font-size:.6rem;padding:.4rem .7rem;letter-spacing:.12em}
+  body.open #hq{opacity:0;pointer-events:none}
+  .sp-t{bottom:20vh}
   #card{left:.8rem;right:.8rem;width:auto;top:auto;bottom:5.4rem;max-height:56vh;max-height:56dvh;transform:translateY(20px)}
   body.open #card{transform:none}
   #card::before{transform:skewX(-3deg)}
@@ -156,9 +177,14 @@ body.open #card{opacity:1;visibility:visible;transform:translate(0,-50%);transit
   <div class="c-body" id="c-body"></div>
 </section>
 
-<div id="credit">Inspired by Persona 3 Reload · <a href="quality/">full-effects version →</a></div>
+<a id="hq" href="quality/" title="Full-effects version: bloom, film grain, a whole hallway"><i></i>QUALITY MODE</a>
+<div id="credit">Inspired by Persona 3 Reload</div>
 <div id="tip"></div>
-<div id="boot"><div class="b">RAYZA MAHENDRA<span><i id="boot-bar"></i></span></div></div>
+<div id="splash" aria-hidden="true">
+  <canvas id="sp-gl"></canvas>
+  <div class="sp-t"><div class="sp-nm">RAYZA MAHENDRA</div><span class="sp-pf">PORTFOLIO</span><div class="sp-bar"><i id="boot-bar"></i></div></div>
+  <div class="sp-skip">CLICK TO SKIP</div>
+</div>
 <noscript><p style="position:fixed;bottom:0;left:0;right:0;margin:0;padding:16px;background:#011021;z-index:99">This portfolio needs JavaScript. Rayza Mahendra · AI &amp; Data Governance CoE Officer, Telkomsel · rayzamgh@gmail.com</p></noscript>
 
 <script type="importmap">
@@ -251,10 +277,95 @@ const tip=$('#tip');
 function showTip(id,x,y){ if (!id){ tip.classList.remove('on'); return; } tip.textContent=SECTIONS[id].title; tip.style.transform=`translate(${x+14}px,${y+12}px) skewX(-10deg)`; tip.classList.add('on'); }
 
 const bar=$('#boot-bar'), progress=v=>bar.style.transform=`scaleX(${Math.min(1,v)})`;
+let readied=false;
 function ready(){
-  $('#boot').classList.add('done'); body.classList.add('ready');
-  const id=location.hash.slice(1); if (SECTIONS[id]) setTimeout(()=>open(id,{fromHash:true}),300);
+  if (readied) return; readied=true;
+  Splash.finish(()=>{
+    body.classList.add('ready');
+    const id=location.hash.slice(1);
+    if (SECTIONS[id]) setTimeout(()=>open(id,{fromHash:true}),250); else world?.intro();
+  });
 }
+
+/* ---------- splash: a droplet hits dark water, the silhouette rises through the ripples,
+              then a second splash opens a ring that reveals the classroom ---------- */
+const Splash=(()=>{
+  const el=$('#splash'), cv=$('#sp-gl');
+  const t0=performance.now(), now=()=>(performance.now()-t0)/1000;
+  let gl=null, U={}, I0=[0,0,1e4], I1=[0,0,1e4], outT=-1, minT=RM?0:2.8, ok=false, cb=null, alive=true;
+  const FS=`precision highp float;
+    uniform vec2 R; uniform float T,face,flash,outR,drop,has,ca; uniform vec3 I0,I1; uniform vec2 tx; uniform sampler2D img;
+    float A(vec2 u){ vec2 s=step(vec2(0.),u)*step(u,vec2(1.)); return texture2D(img,clamp(u,0.,1.)).a*s.x*s.y*has; }
+    float rip(vec3 I,vec2 p,float amp){ float t=T-I.z; if(t<0.) return 0.; float r=length(p-I.xy), f=t*.62;
+      float pk=sin((r-f)*38.)*exp(-abs(r-f)*7.), tr=sin(r*30.-t*10.)*exp(-r*1.6)*step(r,f)*.5;
+      return (pk+tr)*exp(-t*.75)*amp*smoothstep(0.,.04,r); }
+    float caus(vec2 p){ float c=0.; for(int i=0;i<3;i++){ p=p*1.7+vec2(sin(p.y*1.3+T*.4),cos(p.x*1.1-T*.35)); c+=abs(sin(p.x)+sin(p.y)); } return c/6.; }
+    void main(){
+      vec2 p=(gl_FragCoord.xy-.5*R)/R.y;
+      float h0=rip(I0,p,1.), h1=rip(I1,p,1.8), h=h0+h1;
+      vec2 d=normalize(p-I0.xy+1e-4)*h0+normalize(p-I1.xy+1e-4)*h1, q=p+d*.03;
+      vec3 col=mix(vec3(0.,.02,.07),vec3(0.,.17,.4),smoothstep(1.15,0.,length(q)));
+      col+=vec3(.05,.3,.55)*pow(caus(q*3.2),4.)*.5;
+      float FH=.92; vec2 lc=(q-vec2(0.,.02))/vec2(FH*ca,FH)+.5, uv=vec2(lc.x,(1.-lc.y)*.42);
+      float a=A(uv), e=0.; for(int i=0;i<12;i++){ float an=float(i)*.5236; e=max(e,A(uv+vec2(cos(an),sin(an))*tx*7.)); } e=clamp(e-a,0.,1.);
+      col=mix(col,mix(vec3(.01,.04,.11),vec3(.04,.14,.3),lc.y),a*face*.93);
+      col+=vec3(0.,.67,1.)*1.5*e*face;
+      col+=vec3(.55,.82,1.)*max(h,0.)*.35-vec3(.02,.04,.06)*max(-h,0.)*.5;
+      col+=vec3(.6,.9,1.)*exp(-length((p-vec2(0.,drop))*vec2(1.,.5))*85.)*step(-.5,drop)*1.6;
+      col+=flash;
+      col*=1.-smoothstep(.55,1.35,length(p*vec2(.8,1.)));
+      float ed=length(p-I1.xy)+h*.05, al=outR<0.?1.:smoothstep(outR-.07,outR,ed);
+      col+=vec3(.5,.88,1.)*max(0.,1.-abs(ed-outR)*22.)*step(0.,outR)*.9;
+      gl_FragColor=vec4(col*al,al); }`;
+  function setup(){
+    try { gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false}); } catch {}
+    if (!gl) return false;
+    const sh=(type,src)=>{ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if (!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const pr=gl.createProgram();
+    gl.attachShader(pr,sh(gl.VERTEX_SHADER,'attribute vec2 p; void main(){ gl_Position=vec4(p,0.,1.); }'));
+    gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS)); gl.linkProgram(pr); gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    const loc=gl.getAttribLocation(pr,'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    for (const n of ['R','T','face','flash','outR','drop','has','ca','I0','I1','tx','img']) U[n]=gl.getUniformLocation(pr,n);
+    const tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4));
+    for (const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D,k,v);
+    gl.uniform1f(U.has,0); gl.uniform1f(U.ca,.69); gl.uniform2f(U.tx,1/400,1/1383);
+    const im=new Image(); im.onload=()=>{ if (!alive) return; gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
+      gl.uniform1f(U.has,1); gl.uniform1f(U.ca,im.width/(im.height*.42)); gl.uniform2f(U.tx,1/im.width,1/im.height); };
+    im.src='images/char1.png';
+    return true;
+  }
+  const smooth=(a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
+  function draw(){
+    if (!alive) return;
+    const t=now(), w=Math.round(innerWidth*Math.min(devicePixelRatio||1,1.5)), h=Math.round(innerHeight*Math.min(devicePixelRatio||1,1.5));
+    if (cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; gl.viewport(0,0,w,h); }
+    const drop=t<.6?.62-Math.pow(Math.max(0,(t-.1)/.5),2)*.62:-1;
+    if (t>=.6 && I0[2]>1e3) I0=[0,0,.6];
+    if (t>1.05) el.classList.add('t');
+    if (ok && t>=minT && outT<0){ outT=t; I1=[0,0,t]; el.classList.add('out'); cb?.(); }
+    const outR=outT<0?-1:Math.pow(Math.max(0,(t-outT-.12)/.95),1.6)*2.0;
+    const flash=(t>.6?.22*Math.exp(-(t-.6)*9):0)+(outT>0?.4*Math.exp(-(t-outT)*7):0);
+    gl.uniform2f(U.R,w,h); gl.uniform1f(U.T,t); gl.uniform1f(U.face,smooth(.75,2.0,t)); gl.uniform1f(U.flash,flash);
+    gl.uniform1f(U.outR,outR); gl.uniform1f(U.drop,drop); gl.uniform3f(U.I0,...I0); gl.uniform3f(U.I1,...I1);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    if (outT>0 && t-outT>1.25){ alive=false; el.remove(); return; }
+    requestAnimationFrame(draw);
+  }
+  let hasGL=false;
+  try { hasGL=!RM && setup(); } catch (e) { console.warn('splash fallback:',e); hasGL=false; }
+  if (hasGL){ el.classList.add('gl'); requestAnimationFrame(draw); }
+  else { setTimeout(()=>el.classList.add('t'),100); }
+  el.addEventListener('click',()=>{ minT=0; });
+  addEventListener('keydown',()=>{ minT=0; },{once:true});
+  return {
+    finish(fn){
+      cb=fn; ok=true; el.classList.add('ok');
+      if (!hasGL){ setTimeout(()=>{ el.classList.add('out','fade'); fn(); setTimeout(()=>el.remove(),700); }, RM?0:900); }
+    },
+  };
+})();
 const fonts=Promise.race([Promise.all([document.fonts.load('900 48px Inter'),document.fonts.load('600 60px Caveat')]),new Promise(r=>setTimeout(r,2500))]).catch(()=>{});
 const failSafe=setTimeout(ready,12000);
 fonts.then(()=>{ progress(.25); return initWorld(progress); })
@@ -533,7 +644,7 @@ async function initWorld(progress){
     mv={ a, b, mid, qa:cur.quat.clone(), qb:qLook(v.pos,v.look), t:0, dur:RM?.001:(dur??THREE.MathUtils.clamp(.6+a.distanceTo(b)/9,.7,1.2)) };
   }
   const peek=id=>{ if (view==='home') peekId=id; };
-  goTo('home',{dur:2.2});
+  const intro=()=>goTo('home',{dur:2.4}); // plays as the splash opens
 
   /* ---------- picking ---------- */
   const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
@@ -576,7 +687,7 @@ async function initWorld(progress){
     renderer.render(scene,camera);
   }
   renderer.compile(scene,camera); progress(1); frame();
-  return { goTo, peek };
+  return { goTo, peek, intro };
 }
 </script>
 </body>
