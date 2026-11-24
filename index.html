@@ -587,8 +587,8 @@ async function initWorld(progress){
       for (let i=0;i<4;i++){ const j=(i+1)%4; quad(n[i],n[j],f[j],f[i],[1,1,0,0]); } }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('aF',new THREE.Float32BufferAttribute(fade,1)); geo.computeVertexNormals();
     scene.add(new THREE.Mesh(geo,new THREE.ShaderMaterial({ transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending,
-      vertexShader:'attribute float aF; varying float f; varying vec3 n,vv; void main(){ f=aF; vec4 w=modelMatrix*vec4(position,1.); n=normalize(mat3(modelMatrix)*normal); vv=normalize(cameraPosition-w.xyz); gl_Position=projectionMatrix*viewMatrix*w; }',
-      fragmentShader:'varying float f; varying vec3 n,vv; void main(){ float a=pow(f,1.5)*pow(abs(dot(normalize(n),normalize(vv))),1.4)*.05; gl_FragColor=vec4(vec3(.55,.75,1.)*a,1.); }' }))); }
+      vertexShader:'attribute float aF; varying float f; varying vec3 n,vv; void main(){ f=aF; vec4 w=modelMatrix*vec4(position,1.); n=mat3(modelMatrix)*normal; vv=cameraPosition-w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }',
+      fragmentShader:'varying float f; varying vec3 n,vv; void main(){ float ln=length(n), lv=length(vv); if (ln<1e-5 || lv<1e-5) discard; float a=pow(clamp(f,0.,1.),1.5)*pow(clamp(abs(dot(n/ln,vv/lv)),0.,1.),1.4)*.05; gl_FragColor=vec4(vec3(.55,.75,1.)*a,1.); }' }))); }
 
   /* ---------- characters ---------- */
   const loader=new THREE.TextureLoader();

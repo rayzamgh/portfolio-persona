@@ -1161,9 +1161,11 @@ async function initWorld(progress){
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('aFade',new THREE.Float32BufferAttribute(fade,1)); geo.computeVertexNormals();
     var beamMat=new THREE.ShaderMaterial({ transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, fog:false,
       uniforms:{ color:{value:new THREE.Color(.55,.75,1.0)}, time:{value:0}, strength:{value:.07} },
-      vertexShader:`attribute float aFade; varying float vF; varying vec3 vN,vV,vW; void main(){ vF=aFade; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vN=normalize(mat3(modelMatrix)*normal); vV=normalize(cameraPosition-w.xyz); gl_Position=projectionMatrix*viewMatrix*w; }`,
+      vertexShader:`attribute float aFade; varying float vF; varying vec3 vN,vV,vW; void main(){ vF=aFade; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vN=mat3(modelMatrix)*normal; vV=cameraPosition-w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
       fragmentShader:`uniform vec3 color; uniform float time,strength; varying float vF; varying vec3 vN,vV,vW;
-        void main(){ float facing=abs(dot(normalize(vN),normalize(vV))); float f=pow(vF,1.4)*pow(facing,1.2);
+        void main(){ // degenerate beam quads have zero normals: normalizing those gives NaN on D3D, which bloom smears into black blocks
+          float ln=length(vN), lv=length(vV); if (ln<1e-5 || lv<1e-5) discard;
+          float facing=clamp(abs(dot(vN/ln,vV/lv)),0.,1.); float f=pow(clamp(vF,0.,1.),1.4)*pow(facing,1.2);
           float n=.7+.3*sin(vW.z*1.3+time*.5)*sin(vW.y*2.1-time*.35+vW.x);
           gl_FragColor=vec4(color*f*n*strength,1.); }` });
     scene.add(new THREE.Mesh(geo,beamMat));
@@ -1221,6 +1223,11 @@ async function initWorld(progress){
   const rt=new THREE.WebGLRenderTarget(W*DPR,H*DPR,{type:THREE.HalfFloatType,samples:mobile?0:4});
   const composer=new EffectComposer(renderer,rt);
   composer.addPass(new RenderPass(scene,camera));
+  // safety net: clamp HDR before bloom so an overbright/Inf pixel can't blow out the bloom chain
+  composer.addPass(new ShaderPass({ uniforms:{ tDiffuse:{value:null} },
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform sampler2D tDiffuse; varying vec2 vUv;
+      void main(){ vec4 c=texture2D(tDiffuse,vUv); gl_FragColor=vec4(clamp(c.rgb,0.,32.),c.a); }` }));
   const bloom=new UnrealBloomPass(new THREE.Vector2(W,H),.95,.6,.78); composer.addPass(bloom);
   composer.addPass(new OutputPass());
   const finalPass=new ShaderPass({
